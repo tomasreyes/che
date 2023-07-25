@@ -1,15 +1,16 @@
 import { KubernetesCommandLineToolsExecutor } from '../../utils/KubernetesCommandLineToolsExecutor';
 import { expect } from 'chai';
 import { ShellString } from 'shelljs';
-import { TestConstants} from '../../constants/TestConstants';
+import { APITestConstants} from '../../constants/APITestConstants';
 import {StringUtil} from "../../utils/StringUtil";
+import {BaseTestConstants} from "../../constants/BaseTestConstants";
 
 const gitRepository: string = 'https://github.com/crw-qe/web-nodejs-sample';
 
 suite(`Test cloning of repo "${gitRepository}" into empty workspace.`, async function (): Promise<void> {
     // works only for root user
     const namespace: string = 'admin-devspaces';
-    const workspaceName: string = 'empty-' + Math.floor(Math.random() * 1000);
+    const workspaceName: string = 'empty';
     const clonedProjectName: string = StringUtil.getProjectNameFromGitUrl(gitRepository);
     let containerWorkDir: string = '';
     let containerTerminal: KubernetesCommandLineToolsExecutor.ContainerTerminal;
@@ -41,7 +42,7 @@ suite(`Test cloning of repo "${gitRepository}" into empty workspace.`, async fun
         '  components:\n' +
         '    - name: che-code-runtime-description\n' +
         '      container:\n' +
-        `        ${TestConstants.TS_API_TEST_UDI_IMAGE}\n` +
+        `        image: ${APITestConstants.TS_API_TEST_UDI_IMAGE}\n` +
         '        env:\n' +
         '          - name: CODE_HOST\n' +
         '            value: 0.0.0.0\n' +
@@ -141,7 +142,7 @@ suite(`Test cloning of repo "${gitRepository}" into empty workspace.`, async fun
         });
 
         test('Check if files were imported ', function (): void {
-            expect(containerTerminal.ls(`${containerWorkDir}/${clonedProjectName}`).stdout).includes(TestConstants.TS_SELENIUM_PROJECT_ROOT_FILE_NAME);
+            expect(containerTerminal.ls(`${containerWorkDir}/${clonedProjectName}`).stdout).includes(BaseTestConstants.TS_SELENIUM_PROJECT_ROOT_FILE_NAME);
         });
     });
 });
