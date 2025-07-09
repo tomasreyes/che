@@ -15,6 +15,7 @@ import * as axios from 'axios';
 import { Logger } from './Logger';
 import { ShellExecutor } from './ShellExecutor';
 import { API_TEST_CONSTANTS } from '../constants/API_TEST_CONSTANTS';
+import { BASE_TEST_CONSTANTS } from '../constants/BASE_TEST_CONSTANTS';
 import { injectable } from 'inversify';
 import { IContextParams } from './IContextParams';
 import { e2eContainer } from '../configs/inversify.config';
@@ -60,13 +61,20 @@ export class DevWorkspaceConfigurationHelper {
 		if (!this.params.projects) {
 			this.params.projects = [];
 		}
-		return await this.generator.generateDevfileContext(
+
+		const devfileContext: DevfileContext = await this.generator.generateDevfileContext(
 			{
 				...this.params,
 				projects: this.params.projects
 			},
 			axios.default as any
 		);
+
+		if (BASE_TEST_CONSTANTS.TESTING_APPLICATION_NAME() === 'devspaces') {
+			this.addMissedDevWorkspaceConfigAttributes(devfileContext);
+		}
+
+		return devfileContext;
 	}
 
 	// write templates and then DevWorkspace in a single file
@@ -99,13 +107,20 @@ export class DevWorkspaceConfigurationHelper {
 		return content;
 	}
 
-	patchDevWorkspaceConfigWithBuildContainerAttribute(devfileContextDevWorkspace: any): void {
+	/**
+	 * add missed attributes to fix issues CRW-8922, CRW-9187.
+	 */
+	addMissedDevWorkspaceConfigAttributes(
+		devfileContextDevWorkspace: DevfileContext,
+		storageType: string | undefined = API_TEST_CONSTANTS.TS_API_TEST_STORAGE_TYPE
+	): void {
 		Logger.debug();
-		devfileContextDevWorkspace.spec.template.attributes = YAML.parse(`
+		devfileContextDevWorkspace.devWorkspace?.spec?.template &&
+			(devfileContextDevWorkspace.devWorkspace.spec.template.attributes = YAML.parse(`
                     controller.devfile.io/devworkspace-config:
                       name: devworkspace-config
                       namespace: openshift-devspaces
                     controller.devfile.io/scc: container-build
-                    controller.devfile.io/storage-type: per-user`);
+                    controller.devfile.io/storage-type: ${storageType}`));
 	}
 }
