@@ -32,6 +32,15 @@ export class Workspaces {
 	private static readonly CONFIRMATION_WINDOW: By = By.xpath('//div[@aria-label="Delete workspaces confirmation window"]');
 	private static readonly LEARN_MORE_DOC_LINK: By = By.xpath('//div/p/a');
 
+	private static readonly BACKUPS_BUTTON: By = By.id('view-backups');
+	private static readonly BACKUP_IMAGE: By = By.css('input[aria-label="Copyable input"]');
+	private static readonly CREATE_FROM_BACKUP_BUTTON: By = By.xpath('//span[text()="Create from Backup"]');
+	private static readonly RESTORE_WORKSPACE_BUTTON: By = By.xpath('//span[text()="Restore Workspace"]');
+	private static readonly RESTORE_CONFIRM_BUTTON: By = By.xpath('//span[text()="Restore"]');
+	private static readonly EXTERNAL_REGISTRY_MODE_BUTTON: By = By.xpath('//span[text()="External registry"]');
+	private static readonly BACKUP_IMAGE_URL_INPUT: By = By.css('input[aria-label="Backup image URL"]');
+	private static readonly WORKSPACE_NAME_INPUT: By = By.css('input[aria-label="Workspace name"]');
+
 	constructor(
 		@inject(CLASSES.DriverHelper)
 		private readonly driverHelper: DriverHelper
@@ -214,6 +223,68 @@ export class Workspaces {
 		return await this.driverHelper.waitAndGetElementAttribute(Workspaces.LEARN_MORE_DOC_LINK, 'href');
 	}
 
+	async waitBackupStatus(
+		workspaceName: string,
+		status: string,
+		timeout: number = TIMEOUT_CONSTANTS.TS_WAIT_BACKUP_STATUS_TIMEOUT
+	): Promise<void> {
+		Logger.debug(`Backup status for the "${workspaceName}" list item`);
+
+		await this.driverHelper.waitVisibility(this.getBackupStatusLocator(workspaceName, status), timeout);
+	}
+
+	async openBackupsPage(timeout: number = TIMEOUT_CONSTANTS.TS_CLICK_DASHBOARD_ITEM_TIMEOUT): Promise<void> {
+		Logger.debug();
+
+		await this.driverHelper.waitAndClick(Workspaces.BACKUPS_BUTTON, timeout);
+	}
+
+	async clickCreateFromBackupButton(
+		workspaceName: string,
+		timeout: number = TIMEOUT_CONSTANTS.TS_COMMON_DASHBOARD_WAIT_TIMEOUT
+	): Promise<void> {
+		Logger.debug(`"${workspaceName}"`);
+
+		await this.driverHelper.waitAndClick(this.getActionsRestoreWorkspaceButtonLocator(workspaceName), timeout);
+		await this.driverHelper.waitAndClick(Workspaces.CREATE_FROM_BACKUP_BUTTON, timeout);
+	}
+
+	async restoreWorkspaceFromDefaultRegistry(): Promise<void> {
+		Logger.debug();
+
+		await this.driverHelper.waitAndClick(Workspaces.RESTORE_WORKSPACE_BUTTON);
+		await this.driverHelper.waitAndClick(Workspaces.RESTORE_CONFIRM_BUTTON);
+	}
+
+	async restoreWorkspaceFromExternalRegistry(backupImageUrl: string, workspaceName: string): Promise<void> {
+		Logger.debug();
+
+		await this.driverHelper.waitAndClick(Workspaces.EXTERNAL_REGISTRY_MODE_BUTTON);
+		await this.setBackupImageUrlValue(backupImageUrl);
+		await this.setWorkspaceNameValue(workspaceName);
+		await this.driverHelper.waitAndClick(Workspaces.RESTORE_WORKSPACE_BUTTON);
+	}
+
+	async getBackupImageUrlValue(): Promise<string> {
+		Logger.debug();
+
+		return await this.driverHelper.waitAndGetValue(Workspaces.BACKUP_IMAGE, TIMEOUT_CONSTANTS.TS_COMMON_DASHBOARD_WAIT_TIMEOUT);
+	}
+
+	async setBackupImageUrlValue(backupImageUrl: string): Promise<void> {
+		Logger.debug();
+
+		await this.driverHelper.clear(Workspaces.BACKUP_IMAGE_URL_INPUT);
+		await this.driverHelper.type(Workspaces.BACKUP_IMAGE_URL_INPUT, backupImageUrl);
+	}
+
+	async setWorkspaceNameValue(workspaceName: string): Promise<void> {
+		Logger.debug();
+
+		await this.driverHelper.clear(Workspaces.WORKSPACE_NAME_INPUT);
+		await this.driverHelper.type(Workspaces.WORKSPACE_NAME_INPUT, workspaceName);
+	}
+
 	private getWorkspaceListItemLocator(workspaceName: string): By {
 		return By.xpath(`//tr[td//span[text()='${workspaceName}']]`);
 	}
@@ -246,5 +317,13 @@ export class Workspaces {
 
 	private getOpenWorkspaceDetailsLinkLocator(workspaceName: string): By {
 		return By.xpath(`${this.getWorkspaceListItemLocator(workspaceName).value}//span[text()='${workspaceName}']`);
+	}
+
+	private getActionsRestoreWorkspaceButtonLocator(workspaceName: string): By {
+		return By.xpath(`//tr[td//span[text()='${workspaceName}']]//button[@aria-label='Actions for ${workspaceName}']`);
+	}
+
+	private getBackupStatusLocator(workspaceName: string, status: string): By {
+		return By.xpath(`//tr[td//span[text()='${workspaceName}']]//span[@aria-label="Backup status: ${status}"]`);
 	}
 }
